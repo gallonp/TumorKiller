@@ -1,11 +1,19 @@
 import webapp2
+import jinja2
+import os
 
-class HelloWebapp2(webapp2.RequestHandler):
+JINJA_ENVIRONMENT = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(os.path.dirname(__file__)),
+    extensions=['jinja2.ext.autoescape'],
+    autoescape=True)
+
+class Homepage(webapp2.RequestHandler):
     def get(self):
-        self.response.write('Hello, webapp2!')
+	template = JINJA_ENVIRONMENT.get_template('index.html')
+	self.response.write(template.render())
 
 app = webapp2.WSGIApplication([
-    ('/', HelloWebapp2),
+    ('/', Homepage),
 ], debug=True)
 
 def main():
