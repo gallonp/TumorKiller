@@ -89,11 +89,33 @@ class ReadFiles(webapp2.RequestHandler):
         self.response.out.write(file_contents)
 
 
+class TestFileParser(webapp2.RequestHandler):
+    """Handler for testing file parser."""
+
+    def get(self):
+        """Reads and parses specified file in database."""
+        # Get file ID from request.
+        file_id = self.request.GET['file_id']
+        # Establish database connection.
+        conn = ds.CreateSQLiteConnection()
+        # Read the file from the database.
+        file_contents = ds.ReadFile(conn, file_id)
+        # Make sure the file exists.
+        if file_contents is None:
+            self.response.out.write('File (%s) is not in the database.' % file_id)
+        else:
+            # TODO: Convert file contents to parsed object (e.g. JSON).
+            parsed_data = None
+            # Display parsed file contents.
+            self.response.out.write(parsed_data)
+
+
 APP = webapp2.WSGIApplication([
     ('/', Homepage),
     ('/file_list', ListUploadedFiles),
     ('/file_read', ReadFiles),
     ('/file_upload', UploadFiles),
+    ('/test_parser', TestFileParser)
 ], debug=True)
 
 
