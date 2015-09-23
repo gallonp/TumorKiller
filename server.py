@@ -2,6 +2,7 @@
 
 import argparse
 import datastorage as ds
+import dataparser
 import jinja2
 import logging
 import os
@@ -96,18 +97,22 @@ class TestFileParser(webapp2.RequestHandler):
         """Reads and parses specified file in database."""
         # Get file ID from request.
         file_id = self.request.GET['file_id']
+        
         # Establish database connection.
         conn = ds.CreateSQLiteConnection()
         # Read the file from the database.
         file_contents = ds.ReadFile(conn, file_id)
+        
         # Make sure the file exists.
         if file_contents is None:
             self.response.out.write('File (%s) is not in the database.' % file_id)
         else:
-            # TODO: Convert file contents to parsed object (e.g. JSON).
-            parsed_data = None
+            # Parse the file contents.
+            file_header = dataparser.get_header_data(str(file_contents))
+            file_values = dataparser.get_xy_data(str(file_contents))
             # Display parsed file contents.
-            self.response.out.write(parsed_data)
+            self.response.out.write(file_header)
+            self.response.out.write(file_values)
 
 
 APP = webapp2.WSGIApplication([
