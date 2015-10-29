@@ -10,6 +10,7 @@ import paste.httpserver as httpserver
 import sys
 import uuid
 import webapp2
+import fourierTransformer
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(
@@ -93,6 +94,7 @@ class ReadFiles(webapp2.RequestHandler):
 class TestFileParser(webapp2.RequestHandler):
     """Handler for testing file parser."""
 
+
     def get(self):
         """Reads and parses specified file in database."""
         # Get file ID from request.
@@ -111,8 +113,12 @@ class TestFileParser(webapp2.RequestHandler):
             file_header = dataparser.get_header_data(str(file_contents))
             file_values = dataparser.get_xy_data(str(file_contents))
             # Display parsed file contents.
-            self.response.out.write(file_header)
-            self.response.out.write(file_values)
+            # self.response.out.write(file_header)
+            # self.response.out.write(file_values)
+            real = [x.real for x in file_values];
+            
+            self.response.out.write(fourierTransformer.getFFT(real))
+
 
 
 APP = webapp2.WSGIApplication([
