@@ -30,102 +30,103 @@ class Homepage(webapp2.RequestHandler):
         self.response.write(template.render())
 
 
-class UploadFiles(webapp2.RequestHandler):
-    """Handler for data file uploads."""
+class UploadMRSData(webapp2.RequestHandler):
+    """Handler for MRS data uploads."""
 
     def get(self):
-        """Renders web page where the user can upload files."""
-        template = JINJA_ENVIRONMENT.get_template('trainclassifier.html')
+        """Renders web page where the user can upload MRS data."""
+        template = JINJA_ENVIRONMENT.get_template('uploaddata.html')
         self.response.write(template.render())
 
     def post(self):
-        """Saves user-uploaded files to the database."""
+        """Saves user-uploaded MRS data to the database."""
         # Get raw file contents from request.
         file_name = self.request.POST['myfile'].filename
         file_contents = buffer(self.request.POST['myfile'].file.read())
+        # Label for this data's therapy group (e.g. "groupA", "groupB").
+        group_label = self.request.POST['grouplabel']
         # Generate a random UUID for the file.
-        file_id = str(uuid.uuid4().hex)
+        database_id = str(uuid.uuid4().hex)
 
-        # Establish database connection.
+        # Save MRS data to the database.
         conn = ds.CreateSQLiteConnection()
-        # Save file to the database.
-        LOGGER.debug('Saving file to database...')
-        ds.SaveFile(conn, file_id, file_name, file_contents)
-        LOGGER.debug('File saved to database.')
-
+        LOGGER.debug('Saving MRS data to database...')
+        ds.SaveMRSData(conn, database_id, file_name, file_contents, group_label)
+        LOGGER.debug('MRS data saved to database.')
         # Signal upload success to the user.
-        self.response.out.write('<p>File \"%s\" was uploaded.</p>' % file_name)
-        self.response.out.write('<p>File ID: %s</p>' % file_id)
+        self.response.out.write('<p>MRS data \"%s\" (%s) was uploaded.</p>' %
+            (file_name, group_label))
+        self.response.out.write('<p>Database ID: %s</p>' % database_id)
 
 
-class ListUploadedFiles(webapp2.RequestHandler):
-    """Handler for listing uploaded data files."""
-
-    def get(self):
-        """Displays list of files uploaded to the server."""
-        # Establish database connection.
-        conn = ds.CreateSQLiteConnection()
-        # Query for files in the database.
-        LOGGER.debug('Querying for all files in database...')
-        files = ds.ListFiles(conn)
-        LOGGER.debug('Found %d files in database.', len(files))
-
-        # Display the list of files.
-        self.response.out.write('<h2>Uploaded Files</h2>')
-        for file in files:
-            self.response.out.write('<p>%s (%s)</p>' % (file[0], file[1]))
-
-
-class ReadFiles(webapp2.RequestHandler):
-    """Handler for reading uploaded data files."""
+class ListUploadedMRSData(webapp2.RequestHandler):
+    """Handler for listing uploaded MRS data."""
 
     def get(self):
-        """Reads specified file from the database."""
-        # Get file ID from request.
-        file_id = self.request.GET['file_id']
+        """Displays list of MRS data entries uploaded to the server."""
         # Establish database connection.
         conn = ds.CreateSQLiteConnection()
-        # Read the file from the database.
-        file_contents = ds.ReadFile(conn, file_id)
+        # Query for all MRS data entries in the database.
+        LOGGER.debug('Querying for all MRS data in database...')
+        db_entries = ds.ListMRSData(conn)
+        LOGGER.debug('Found %d MRS data entries in database.', len(db_entries))
+
+        # Display the list of MRS data.
+        self.response.out.write('<h2>Uploaded MRS Data</h2>')
+        for entry in db_entries:
+            self.response.out.write('<p>[%s] %s (ID: %s)</p>' %
+                (entry[3], entry[1], entry[0]))
+
+
+class ReadMRSData(webapp2.RequestHandler):
+    """Handler for reading uploaded MRS data files."""
+
+    def get(self):
+        """Reads the specified MRS data file from the database."""
+        # Get database ID from request.
+        db_id = self.request.GET['db_id']
+        # Establish database connection.
+        conn = ds.CreateSQLiteConnection()
+        # Query database for MRS data with specified ID.
+        db_entry = ds.ReadMRSData(conn, db_id)
+        file_contents = db_entry[2] if db_entry else None
         # Return file contents in the response.
         self.response.out.write(file_contents)
 
 
 class TestFileParser(webapp2.RequestHandler):
-    """Handler for testing file parser."""
-
+    """Handler for testing MRS data file parser."""
 
     def get(self):
-        """Reads and parses specified file in database."""
-        # Get file ID from request.
-        file_id = self.request.GET['file_id']
-        
+        """Reads and parses specified MRS data file in database."""
+        # Query the database for MRS data with specified ID.
+        db_id = self.request.GET['db_id']
         # Establish database connection.
         conn = ds.CreateSQLiteConnection()
         # Read the file from the database.
-        file_contents = ds.ReadFile(conn, file_id)
-        
+        db_entry = ds.ReadMRSData(conn, db_id)
+
         # Make sure the file exists.
-        if file_contents is None:
-            self.response.out.write('File (%s) is not in the database.' % file_id)
+        if db_entry is None:
+            self.response.out.write('ID (%s) not found in database.' % db_id)
         else:
             # Parse the file contents.
+            file_contents = db_entry[2]
             file_header = dataparser.get_header_data(str(file_contents))
             file_values = dataparser.get_xy_data(str(file_contents))
             # Display parsed file contents.
             # self.response.out.write(file_header)
             # self.response.out.write(file_values)
             real = [x.real for x in file_values];
-            
-            self.response.out.write(fourierTransformer.getFFT(real))
 
+            self.response.out.write(fourierTransformer.getFFT(real))
 
 
 APP = webapp2.WSGIApplication([
     ('/', Homepage),
-    ('/file_list', ListUploadedFiles),
-    ('/file_read', ReadFiles),
-    ('/file_upload', UploadFiles),
+    ('/data_list', ListUploadedMRSData),
+    ('/data_read', ReadMRSData),
+    ('/data_upload', UploadMRSData),
     ('/test_parser', TestFileParser)
 ], debug=True)
 

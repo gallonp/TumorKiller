@@ -8,7 +8,7 @@ import sqlite3
 SQLITE_DATABASE_FILE = 'database.db'
 
 # Column description for table containing brain scan data.
-TABLE_COLS_BRAINSCANS = '(Id TEXT, FileName TEXT, FileContents BLOB)'
+TABLE_COLS_BRAINSCANS = '(Id TEXT, FileName TEXT, FileContents BLOB, GroupLabel TEXT)'
 
 # Name of table containing brain scan data.
 TABLE_NAME_BRAINSCANS = 'BrainScans'
@@ -59,35 +59,37 @@ def _CreateTableIfNotExists(conn, table_name, columns):
         cur.execute('CREATE TABLE IF NOT EXISTS %s%s' % (table_name, columns))
 
 
-def SaveFile(conn, file_id, file_name, file_contents):
-    """Stores given file in the database.
+def SaveMRSData(conn, file_id, file_name, file_contents, group_label):
+    """Stores given MRS data in the database.
 
     Args:
         conn: A database Connection object.
         file_id: Unique identifier for the file.
         file_name: Name of the file.
         file_contents: Raw file contents.
+        group_label: Name of the therapy group that the given patient data belongs to.
     """
     # Create the table if it does not exist.
     _CreateTableIfNotExists(conn, TABLE_NAME_BRAINSCANS, TABLE_COLS_BRAINSCANS)
     # Try to insert a new row into the table.
     with conn:
         cur = conn.cursor()
-        # Add the file to the table.
         cur.execute(
-            'INSERT INTO %s VALUES(?, ?, ?)' % TABLE_NAME_BRAINSCANS,
-            (file_id, file_name, file_contents))
+            'INSERT INTO %s VALUES(?, ?, ?, ?)' % TABLE_NAME_BRAINSCANS,
+            (file_id, file_name, file_contents, group_label))
 
 
-def ReadFile(conn, file_id):
-    """Reads the specified file from the database.
+def ReadMRSData(conn, file_id):
+    """Reads the specified MRS data from the database.
 
     Args:
         conn: A database Connection object.
         file_id: Unique identifier for the file.
 
     Returns:
-        Contents of the specified file if found, otherwise return None.
+        If an entry with specified ID is found, the MRS data is returned in a
+        4-tuple of the form (file_id, file_name, file_contents, group_label).
+        Otherwise, the method returns None.
     """
     # Make sure the table exists.
     if not _TableExists(conn, TABLE_NAME_BRAINSCANS):
@@ -96,21 +98,22 @@ def ReadFile(conn, file_id):
     with conn:
         cur = conn.cursor()
         cur.execute(
-            'SELECT FileContents FROM %s WHERE Id=\"%s\"' %
+            'SELECT * FROM %s WHERE Id=\"%s\"' %
             (TABLE_NAME_BRAINSCANS, file_id))
         data = cur.fetchone()
         # If found, return the file contents.
-        return data[0] if data else None
+        return data if data else None
 
 
-def ListFiles(conn):
-    """Gets list of files stored in the database.
-    
+def ListMRSData(conn):
+    """Gets list of all MRS data entries stored in the database.
+
     Args:
         conn: A database Connection object.
 
     Returns:
-        List of all files stored in the database.
+        List of all MRS data entries in the database. Each item in the list is
+        a 4-tuple of the form (ID, filename, MRS file contents, group label).
     """
     # Make sure the table exists.
     if not _TableExists(conn, TABLE_NAME_BRAINSCANS):

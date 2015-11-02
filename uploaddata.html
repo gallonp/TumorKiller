@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Tumor Project</title>
+</head>
+<body>
+
+<h1>Upload MRS Data</h1>
+
+<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+
+    Dataset:
+    <input id="fileupload" name="myfile" type="file" />
+	<br><br>
+
+    Data Label:
+    <select name="grouplabel">
+        <option value="groupA">Group A</option>
+        <option value="groupB">Group B</option>
+	</select>
+    <br><br>
+
+    <input type="submit" value="Upload">
+</form>
+
+</body>
+</html>
