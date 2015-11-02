@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Upload Data</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1 class="page-title">Upload MRS Data</h1>
+
+<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+    <div class="section-container">
+        <h3 class="section-title">1. Choose MRS Data File</h3>
+        <div class="section-body">
+            <input id="fileupload" name="myfile" type="file" style=""/>
+        </div>
+    </div>
+    <br>
+    <div class="section-container">
+        <h3 class="section-title">2. Label The Data</h3>
+        <div class="section-body">
+            <p class="section-description">Which threrapy group does the selected data belong to?</p>
+            <select name="grouplabel">
+                <option value="groupA">Group A</option>
+                <option value="groupB">Group B</option>
+    	    </select>
+        </div>
+    </div>
+    <br>
+    <input type="submit" value="Upload" class="form-button blue-button">
+</form>
+
+</body>
+</html>

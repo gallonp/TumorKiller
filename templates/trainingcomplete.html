@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Train Classifier</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1 class="page-title">Training Complete</h1>
+
+<div class="section-container">
+    <h3 class="section-title">Training Results</h3>
+    <div class="section-body">
+        <p class="section-description">
+            Classifier: {{ classifier_type }} {% if not classifier_name is none %}({{ classifier_name }}){% endif %}<br>
+            Training Time: {{ '%.2f' % training_time|float }} s <br>
+            Training Accuracy: {{ '%.2f' % (training_accuracy|float * 100) }} %
+        </p>
+    </div>
+</div>
+<br>
+<br>
+
+<div class="section-container">
+    <h3 class="section-title">Save Classifier</h3>
+    <div class="section-body">
+        <p class="section-description">
+            Would you like to save this classifier?<br>
+            Saved classifiers can be used for classification or for further training.
+        </p>
+        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="save_classifier">
+            <input type="hidden" name="classifier_id" value="{{ classifier_id }}">
+            <input type="hidden" name="classifier_type" value="{{ classifier_type }}">
+            <input type="text" name="classifier_name" placeholder="Enter a name for the classifier" class="text-input" autocomplete="off">
+            <br><br>
+            <input type="submit" value="Save" class="form-button blue-button" style="font-size:12px">
+        </form>
+    </div>
+</div>
+<br>
+<br>
+
+</body>
+</html>

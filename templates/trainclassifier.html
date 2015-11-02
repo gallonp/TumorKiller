@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Train Classifier</title>
+<script type="text/javascript">
+function updateClassifierSelection(clickedButton) {
+    // Get classifier options.
+    classifierOptions = document.getElementsByClassName("classifier-option");
+    // Determine which option was selected.
+    if (classifierOptions[0].contains(clickedButton)) {
+        selectedOption = 0;
+        unselectedOption = 1;
+    } else {
+        selectedOption = 1;
+        unselectedOption = 0;
+    }
+    // Update radio buttons.
+    classifierOptions[unselectedOption].getElementsByTagName("input")[0].checked = false;
+    classifierOptions[selectedOption].getElementsByTagName("input")[0].checked = true;
+    // Update appearance of options.
+    classifierOptions[unselectedOption].style.opacity = 0.5;
+    classifierOptions[selectedOption].style.opacity = 1;
+}
+</script>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1 class="page-title">Train Classifier</h1>
+
+<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+
+    <!-- Classifier -->
+    <div class="section-container" id="choose-classifier">
+        <h3 class="section-title">1. Classifier</h3>
+        <div class="section-body">
+            <p class="section-description">Choose a classifier type.</p>
+            <!-- Load classifier -->
+            <div class="classifier-option" id="classifier-option-load" onclick="updateClassifierSelection(this)" style="opacity:1;">
+                <input type="radio" class="classifier-option-button" name="load_classifier" value="true" checked="true">Load Classifier
+                <br>
+                {% if classifiers|length > 0 %}
+                    <select id="selectclassifier" name="classifier_id" multiple="false" size="5" class="select-list">
+                        {% for entry in classifiers %}
+                            <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No saved classifiers were found.</p>
+                {% endif %}
+            </div>
+            <!-- New classifier -->
+            <div class="classifier-option" id="classifier-option-new" onclick="updateClassifierSelection(this)">
+                <input type="radio" class="classifier-option-button" name="load_classifier" value="false">New Classifier
+            	<select name="classifier">
+                    <option value="NeuralNetwork">Neural Network</option>
+                    <option value="classifier2">Classifier 2</option>
+                    <option value="classifier3">Classifier 3</option>
+            	</select>
+            </div>
+        </div>
+    </div>
+	<br>
+	<br>
+
+    <!-- Classifier parameters -->
+    <div class="section-container">
+    	<h3 class="section-title">2. Training Parameters</h3>
+        <div class="section-body">
+            <p class="section-description">Parameters to be used for training.</p>
+        	<div class="classifier-params">
+                Learning rate <input type="text" name="learning_rate" value="0.001"><br><br>
+            	Iterations <input type="text" name="n_iter" value="25">
+            </div>
+        </div>
+    </div>
+	<br>
+    <br>
+    
+    <!-- Training data -->
+    <div class="section-container">
+    	<h3 class="section-title">3. Training Data</h3>
+        <div class="section-body">
+            <p class="section-description">Select the MRS data that should be used for training.</p>
+            {% if mrs_data|length > 0 %}
+                <select id="selectdata" name="training_data_ids" multiple="true" size="5" class="select-list">
+                    {% for entry in mrs_data %}
+                        <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No MRS data was found.</p>
+            {% endif %}
+        </div>
+    </div>
+	<br>
+    <br>
+
+	<input type="submit" value="Train Classifier" class="form-button blue-button">
+</form>
+
+</body>
+</html>

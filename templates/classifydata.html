@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Classify Data</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+
+<h1 class="page-title">MRS Data Classification</h1>
+
+<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+    <div class="section-container">
+        <h3 class="section-title">1. Choose Classifier</h3>
+        <div class="section-body">
+            <p class="section-description" style="margin-bottom:0px">Which classifier would you like to use?</p>
+            {% if classifiers|length > 0 %}
+                <select id="selectclassifier" name="classifier_id" multiple="false" size="5" class="select-list">
+                    {% for entry in classifiers %}
+                        <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;" id="no-classifiers">No saved classifiers were found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <br>
+    <div class="section-container">
+        <h3 class="section-title">2. Choose Data</h3>
+        <div class="section-body">
+            <p class="section-description">Please upload a MRS data file to be classified.</p>
+            <input id="fileupload" name="myfile" type="file" style=""/>
+        </div>
+    </div>
+    <br>
+    <input type="submit" value="Classify Data" class="form-button blue-button">
+</form>
+
+</body>
+</html>

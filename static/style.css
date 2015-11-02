@@ -1,0 +1,86 @@
+body {
+    font-family:Arial,sans-serif;
+    font-size:14px;
+}
+.page-title {
+    color:#919191;
+    font-size:25px;
+    font-weight:normal;
+    letter-spacing:1px;
+    text-transform:uppercase;
+}
+.section-body {
+    margin:15px 30px;
+}
+.section-container {
+    background-color:#F2F2F2;
+    margin:0px;
+    padding:10px;
+}
+.section-title {
+    color:#222;
+    font-weight:normal;
+    letter-spacing:0.5px;
+    margin:5px 0px 0px 0px;
+    text-decoration:none;
+}
+.section-description {
+    color:#404040;
+    font-weight:normal;
+    letter-spacing:0.5px;
+    line-height:200%;
+    margin:0px 0px 15px 0px;
+    text-decoration:none;
+}
+.classifier-option {
+    opacity:0.5;
+    margin:15px 0px 25px 0px;
+}
+.classifier-params {
+    margin:10px 15px;
+}
+.classifier-params-container {
+    margin:15px 15px 0px 20px;
+    border:1px solid #CCC;
+}
+.select-list{
+    margin:15px;
+    padding:3px 5px;
+    width:200px;
+}
+.select-list select {
+    padding:30px;
+    height:30px;
+}
+.text-input {
+    height:20px;
+    padding:5px 10px;
+    width:200px;
+}
+.form-button {
+    -webkit-border-radius: 2;
+    -moz-border-radius: 2;
+    border-radius: 2px;
+    color: #ffffff;
+    font-size:16px;
+    padding: 8px 12px 8px 12px;
+    text-decoration: none;
+    letter-spacing:1px;
+    border:none;
+    cursor:pointer;
+}
+.form-button:hover {
+    text-decoration: none;
+}
+.blue-button {
+  background: #4285f4;
+}
+.blue-button:hover {
+  background: #3b78e7; 
+}
+.grey-button {
+  background: #5E5E5E;
+}
+.grey-button:hover {
+  background: #4A4A4A; 
+}

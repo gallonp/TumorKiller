@@ -3,6 +3,7 @@ Please use pip to install the following dependencies:
 2. webob
 3. paste
 4. jinja2
+5. scikit-neuralnetwork
 
 start the server by running:
  python server.py
