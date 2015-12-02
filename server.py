@@ -70,7 +70,7 @@ class MRSDataUploader(webapp2.RequestHandler):
         self.response.out.write('<p>MRS data \"%s\" (%s) was uploaded.</p>' %
             (file_name, group_label))
         self.response.out.write('<p>Database ID: %s</p>' % database_id)
-
+        self.response.out.write('<a href="/">return</a>')
 
 class MRSDataList(webapp2.RequestHandler):
     """Handler for listing uploaded MRS data."""
@@ -128,7 +128,8 @@ class ClassifierUploader(webapp2.RequestHandler):
         conn = ds.CreateSQLiteConnection()
         ds.StoreClassifier(
             conn, classifier_id, classifier_name, classifier_type, classifier)
-        self.response.out.write("Classifier was saved.")
+        self.response.out.write("<p>Classifier was saved.</p>")
+        self.response.out.write('<a href="/">return</a>')
 
 
 class ClassifierTrainer(webapp2.RequestHandler):

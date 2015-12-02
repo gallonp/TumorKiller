@@ -54,8 +54,8 @@ function updateClassifierSelection(clickedButton) {
                 <input type="radio" class="classifier-option-button" name="load_classifier" value="false">New Classifier
             	<select name="classifier">
                     <option value="NeuralNetwork">Neural Network</option>
-                    <option value="classifier2">Classifier 2</option>
-                    <option value="classifier3">Classifier 3</option>
+                    <option value="Decision Tree">Classifier 2</option>
+                    <option value="Random Forest">Classifier 3</option>
             	</select>
             </div>
         </div>
@@ -69,8 +69,11 @@ function updateClassifierSelection(clickedButton) {
         <div class="section-body">
             <p class="section-description">Parameters to be used for training.</p>
         	<div class="classifier-params">
-                Learning rate <input type="text" name="learning_rate" value="0.001"><br><br>
-            	Iterations <input type="text" name="n_iter" value="25">
+                <p>layers: <input type="text" name="learning_rate" value="[3,6,3]"></p>
+                <p>Learning rate: <input type="text" name="learning_rate" value="0.001"></p>
+            	<p>Iterations <input type="text" name="n_iter" value="25"></p>
+                <p>Fourier Transform <input type="checkbox" name="fft" checked></p>
+
             </div>
         </div>
     </div>
@@ -97,6 +100,7 @@ function updateClassifierSelection(clickedButton) {
     <br>
 
 	<input type="submit" value="Train Classifier" class="form-button blue-button">
+    <input type="button" onclick="location.href='/';" value="Return"  class="form-button" />
 </form>
 
 </body>
