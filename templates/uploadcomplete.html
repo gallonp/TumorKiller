@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Upload Data</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/"><img class="navbar-icon" src="brain.png" /></a>
+        <a href="data_manager"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">MRS Data</div></div></a>
+        <a href="train_classifier"><div class="navbar-item"><div class="navbar-item-text">Train Classifier</div></div></a>
+        <a href="classify_data"><div class="navbar-item"><div class="navbar-item-text">Classify Data</div></div></a>
+    </div>
+
+    <div class="page-content">
+        <h1 class="page-title">Upload Complete</h1>
+
+        <div class="section-container">
+            <h3 class="section-title">File Information</h3>
+            <div class="section-body">
+                <p class="section-description">
+                    File Name: {{ file_name }}<br>
+                    Group Label: {{ group_label }}<br>
+                    Database ID: {{ database_id }}<br>
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -5,31 +5,38 @@
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-
-<h1 class="page-title">Upload MRS Data</h1>
-
-<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
-    <div class="section-container">
-        <h3 class="section-title">1. Choose MRS Data File</h3>
-        <div class="section-body">
-            <input id="fileupload" name="myfile" type="file" style=""/>
-        </div>
+    <div class="navbar">
+        <a href="/"><img class="navbar-icon" src="brain.png" /></a>
+        <a href="data_manager"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">MRS Data</div></div></a>
+        <a href="train_classifier"><div class="navbar-item"><div class="navbar-item-text">Train Classifier</div></div></a>
+        <a href="classify_data"><div class="navbar-item"><div class="navbar-item-text">Classify Data</div></div></a>
     </div>
-    <br>
-    <div class="section-container">
-        <h3 class="section-title">2. Label The Data</h3>
-        <div class="section-body">
-            <p class="section-description">Which threrapy group does the selected data belong to?</p>
-            <select name="grouplabel">
-                <option value="groupA">Group A</option>
-                <option value="groupB">Group B</option>
-    	    </select>
-        </div>
+
+    <div class="page-content">
+        <h1 class="page-title">Upload MRS Data</h1>
+
+        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+            <div class="section-container">
+                <h3 class="section-title">1. Choose MRS Data File</h3>
+                <div class="section-body">
+                    <input id="fileupload" name="myfile" type="file" style=""/>
+                </div>
+            </div>
+
+            <div class="section-container">
+                <h3 class="section-title">2. Label The Data</h3>
+                <div class="section-body">
+                    <p class="section-description">Which threrapy group does the selected data belong to?</p>
+                    <select name="grouplabel">
+                        <option value="groupA">Group A</option>
+                        <option value="groupB">Group B</option>
+            	    </select>
+                </div>
+            </div>
+
+            <input type="submit" value="Upload" class="form-button blue-button">
+        </form>
     </div>
-    <br>
-    <input type="submit" value="Upload" class="form-button blue-button">
-    <input type="button" onclick="location.href='/';" value="Return"  class="form-button" />
-</form>
 
 </body>
 </html>

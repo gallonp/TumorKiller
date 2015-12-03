@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Classify Data</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/"><img class="navbar-icon" src="brain.png" /></a>
+        <a href="data_manager"><div class="navbar-item"><div class="navbar-item-text">MRS Data</div></div></a>
+        <a href="train_classifier"><div class="navbar-item"><div class="navbar-item-text">Train Classifier</div></div></a>
+        <a href="classify_data"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">Classify Data</div></div></a>
+    </div>
+
+    <div class="page-content">
+        <h1 class="page-title">Classification Complete</h1>
+        <div class="section-container">
+            <div class="section-body">
+                <p class="section-description">
+                    {{ file_name }} was classified as: {{ classification }}
+                </p>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

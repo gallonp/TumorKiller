@@ -4,15 +4,23 @@
 <title>Train Classifier</title>
 <script type="text/javascript">
 function updateClassifierSelection(clickedButton) {
-    // Get classifier options.
-    classifierOptions = document.getElementsByClassName("classifier-option");
     // Determine which option was selected.
+    var classifierOptions = document.getElementsByClassName("classifier-option");
     if (classifierOptions[0].contains(clickedButton)) {
         selectedOption = 0;
         unselectedOption = 1;
     } else {
         selectedOption = 1;
         unselectedOption = 0;
+    }
+
+    // Unselect previously selected option.
+    if (selectedOption == 0) {
+        // Unselect new classifier type.
+        document.getElementById("newclassifiermenu").selectedIndex = 0;
+    } else if (document.getElementById("loadclassifiermenu") != null) {
+        // Unselect loaded classifier.
+        document.getElementById("loadclassifiermenu").selectedIndex = -1;
     }
     // Update radio buttons.
     classifierOptions[unselectedOption].getElementsByTagName("input")[0].checked = false;
@@ -21,87 +29,131 @@ function updateClassifierSelection(clickedButton) {
     classifierOptions[unselectedOption].style.opacity = 0.5;
     classifierOptions[selectedOption].style.opacity = 1;
 }
+
+function _updateClassifierParams_loaded(savedClassifierMenu) {
+    // Make sure a saved classifier is selected.
+    if (savedClassifierMenu.selectedIndex < 0) {
+        return;
+    }
+    // Determine selected classifier type.
+    var selectedOption = savedClassifierMenu.options[savedClassifierMenu.selectedIndex]
+    var beginBracket = selectedOption.text.indexOf("[")
+    var endBracket = selectedOption.text.indexOf("]")
+    // Show parameters for selected classifier type.
+    var classifierType = selectedOption.text.substring(beginBracket + 1, endBracket)
+    updateClassifierParams(classifierType)
+}
+
+function _updateClassifierParams_new(newClassifierMenu) {
+    // Make sure a classifier type is selected.
+    if (newClassifierMenu.selectedIndex == 0) {
+        return;
+    }
+    // Show paramters for selected classifier type.
+    var classifierType = newClassifierMenu.options[newClassifierMenu.selectedIndex].value;
+    console.log("selected " + classifierType)
+    updateClassifierParams(classifierType);
+}
+
+function updateClassifierParams(classifierType) {
+    // Hide all classifier parameters.
+    var classifierParameters = document.getElementsByClassName("classifier-params");
+    for (i = 0; i < classifierParameters.length; ++i) {
+        classifierParameters[i].style.display = "none";
+    }
+    // Show parameters for the selected classifier.
+    var paramsToShowId = "params-" + classifierType;
+    document.getElementById(paramsToShowId).style.display = "block";
+}
 </script>
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-
-<h1 class="page-title">Train Classifier</h1>
-
-<form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
-
-    <!-- Classifier -->
-    <div class="section-container" id="choose-classifier">
-        <h3 class="section-title">1. Classifier</h3>
-        <div class="section-body">
-            <p class="section-description">Choose a classifier type.</p>
-            <!-- Load classifier -->
-            <div class="classifier-option" id="classifier-option-load" onclick="updateClassifierSelection(this)" style="opacity:1;">
-                <input type="radio" class="classifier-option-button" name="load_classifier" value="true" checked="true">Load Classifier
-                <br>
-                {% if classifiers|length > 0 %}
-                    <select id="selectclassifier" name="classifier_id" multiple="false" size="5" class="select-list">
-                        {% for entry in classifiers %}
-                            <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
-                        {% endfor %}
-                    </select>
-                {% else %}
-                    <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No saved classifiers were found.</p>
-                {% endif %}
-            </div>
-            <!-- New classifier -->
-            <div class="classifier-option" id="classifier-option-new" onclick="updateClassifierSelection(this)">
-                <input type="radio" class="classifier-option-button" name="load_classifier" value="false">New Classifier
-            	<select name="classifier">
-                    <option value="NeuralNetwork">Neural Network</option>
-                    <option value="Decision Tree">Classifier 2</option>
-                    <option value="Random Forest">Classifier 3</option>
-            	</select>
-            </div>
-        </div>
+    <div class="navbar">
+        <a href="/"><img class="navbar-icon" src="brain.png" /></a>
+        <a href="data_manager"><div class="navbar-item"><div class="navbar-item-text">MRS Data</div></div></a>
+        <a href="train_classifier"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">Train Classifier</div></div></a>
+        <a href="classify_data"><div class="navbar-item"><div class="navbar-item-text">Classify Data</div></div></a>
     </div>
-	<br>
-	<br>
 
-    <!-- Classifier parameters -->
-    <div class="section-container">
-    	<h3 class="section-title">2. Training Parameters</h3>
-        <div class="section-body">
-            <p class="section-description">Parameters to be used for training.</p>
-        	<div class="classifier-params">
-                <p>layers: <input type="text" name="learning_rate" value="[3,6,3]"></p>
-                <p>Learning rate: <input type="text" name="learning_rate" value="0.001"></p>
-            	<p>Iterations <input type="text" name="n_iter" value="25"></p>
-                <p>Fourier Transform <input type="checkbox" name="fft" checked></p>
+    <div class="page-content">
+        <h1 class="page-title">Train Classifier</h1>
 
+        <form enctype="multipart/form-data" method="post" action="#">
+            <!-- Classifier -->
+            <div class="section-container" id="choose-classifier">
+                <h3 class="section-title">1. Classifier</h3>
+                <div class="section-body">
+                    <p class="section-description">Choose a classifier type.</p>
+                    <!-- Load classifier -->
+                    <div class="classifier-option" id="classifier-option-load" onclick="updateClassifierSelection(this)" style="opacity:1;">
+                        <input type="radio" class="classifier-option-button" name="load_classifier" value="true" checked="true">Load Classifier
+                        <br>
+                        {% if classifiers|length > 0 %}
+                            <select id="loadclassifiermenu" name="classifier_id" multiple="false" size="5" class="select-list" onchange="_updateClassifierParams_loaded(this)">
+                                {% for entry in classifiers %}
+                                    <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No saved classifiers were found.</p>
+                        {% endif %}
+                    </div>
+                    <!-- New classifier -->
+                    <div class="classifier-option" id="classifier-option-new" onclick="updateClassifierSelection(this)">
+                        <input type="radio" class="classifier-option-button" name="load_classifier" value="false">New Classifier
+                    	<select id="newclassifiermenu" name="classifier_type" onchange="_updateClassifierParams_new(this)">
+                            <option value="--">--</option>
+                            <option value="NeuralNetwork">Neural Network</option>
+                            <option value="SVM">State Vector Machine</option>
+                    	</select>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-	<br>
-    <br>
+
+            <!-- Classifier parameters -->
+            <div class="section-container">
+            	<h3 class="section-title">2. Training Parameters</h3>
+                <div class="section-body">
+                    <p class="section-description">Parameters to be used for training.</p>
+                    <!-- Neural network parameters. -->
+                	<div class="classifier-params" id="params-NeuralNetwork">
+                        Learning rate <input type="text" name="nn_learning_rate" value="0.001"><br><br>
+                    	Iterations <input type="text" name="nn_n_iter" value="25">
+                    </div>
+                    <!-- State vector machine parameters. -->
+                	<div class="classifier-params" id="params-SVM">
+                        Penalty C <input type="text" name="svm_penalty_c" value="1.0"><br><br>
+                    	Kernel <input type="text" name="svm_kernel" value="rbf">
+                    </div>
+                	<div class="classifier-params">
+                        <p>Learning rate: <input type="text" name="learning_rate" value="0.001"></p>
+                    	<p>Iterations <input type="text" name="n_iter" value="25"></p>
+                    </div>
+                </div>
+            </div>
     
-    <!-- Training data -->
-    <div class="section-container">
-    	<h3 class="section-title">3. Training Data</h3>
-        <div class="section-body">
-            <p class="section-description">Select the MRS data that should be used for training.</p>
-            {% if mrs_data|length > 0 %}
-                <select id="selectdata" name="training_data_ids" multiple="true" size="5" class="select-list">
-                    {% for entry in mrs_data %}
-                        <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
-                    {% endfor %}
-                </select>
-            {% else %}
-                <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No MRS data was found.</p>
-            {% endif %}
-        </div>
-    </div>
-	<br>
-    <br>
+            <!-- Training data -->
+            <div class="section-container">
+            	<h3 class="section-title">3. Training Data</h3>
+                <div class="section-body">
+                    <p class="section-description">Select the MRS data that should be used for training.</p>
+                    {% if mrs_data|length > 0 %}
+                        <select id="selectdata" name="training_data_ids" multiple="true" size="5" class="select-list">
+                            {% for entry in mrs_data %}
+                                <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
+                            {% endfor %}
+                        </select>
+                        <p><input type="checkbox" name="apply_fft" checked>Apply Fast Fourier Transform</p>
+                    {% else %}
+                        <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No MRS data was found.</p>
+                    {% endif %}
+                </div>
+            </div>
 
-	<input type="submit" value="Train Classifier" class="form-button blue-button">
-    <input type="button" onclick="location.href='/';" value="Return"  class="form-button" />
-</form>
+        	<input type="submit" value="Train Classifier" class="form-button blue-button">
+        </form>
+    </div>
 
 </body>
 </html>

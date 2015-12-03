@@ -43,6 +43,15 @@ class Homepage(webapp2.RequestHandler):
         self.response.write(template.render())
 
 
+class MRSDataManager(webapp2.RequestHandler):
+    """Handler for MRS data management."""
+
+    def get(self):
+        """Renders web page where the user can manage MRS data."""
+        template = JINJA_ENVIRONMENT.get_template('managedata.html')
+        self.response.write(template.render())
+
+
 class MRSDataUploader(webapp2.RequestHandler):
     """Handler for MRS data uploads."""
 
@@ -67,10 +76,12 @@ class MRSDataUploader(webapp2.RequestHandler):
         ds.StoreMRSData(conn, database_id, file_name, file_contents, group_label)
         LOGGER.debug('MRS data saved to database.')
         # Signal upload success to the user.
-        self.response.out.write('<p>MRS data \"%s\" (%s) was uploaded.</p>' %
-            (file_name, group_label))
-        self.response.out.write('<p>Database ID: %s</p>' % database_id)
-        self.response.out.write('<a href="/">return</a>')
+        template = JINJA_ENVIRONMENT.get_template('uploadcomplete.html')
+        self.response.write(template.render(
+            file_name=file_name,
+            group_label=group_label,
+            database_id=database_id))
+
 
 class MRSDataList(webapp2.RequestHandler):
     """Handler for listing uploaded MRS data."""
@@ -128,8 +139,10 @@ class ClassifierUploader(webapp2.RequestHandler):
         conn = ds.CreateSQLiteConnection()
         ds.StoreClassifier(
             conn, classifier_id, classifier_name, classifier_type, classifier)
-        self.response.out.write("<p>Classifier was saved.</p>")
-        self.response.out.write('<a href="/">return</a>')
+
+        # Signal save success to user.
+        template = JINJA_ENVIRONMENT.get_template('classifiersaved.html')
+        self.response.write(template.render())
 
 
 class ClassifierTrainer(webapp2.RequestHandler):
@@ -151,14 +164,15 @@ class ClassifierTrainer(webapp2.RequestHandler):
     def post(self):
         """Trains a classifier as specified by the user."""
         # Get classifier type.
-        classifier_type = self.request.POST['classifier']
+        classifier_type = self.request.POST['classifier_type']
         # Get classifier parameters.
-        learning_rate = float(self.request.POST['learning_rate'])
-        n_iter = int(self.request.POST['n_iter'])
-        # Get training data IDs.
-        training_data_ids = self.request.get_all("training_data_ids")
+        # TODO: pass dictionary of params to a generic training method
+        learning_rate = float(self.request.POST['nn_learning_rate'])
+        n_iter = int(self.request.POST['nn_n_iter'])
         # Get load classifer option.
         load_classifier = self.request.POST['load_classifier'] == 'true'
+        # Get dataset identifiers.
+        training_data_ids = self.request.get_all("training_data_ids")
 
         LOGGER.debug('TrainClassifier: type=%s, load_classifier=%s, num_samples=%d' % (
             classifier_type, load_classifier, len(training_data_ids)))
@@ -198,31 +212,35 @@ class ClassifierTrainer(webapp2.RequestHandler):
         sampleInputs = np.array(sampleInputs)  # convert before using as buffer
         sampleInputs = np.ndarray(
             shape=(n_samples, n_features), dtype=float, buffer=sampleInputs)
-        # Output labels for training.
+        # Labels for training.
         sampleOutputs = np.array(sampleOutputs)
         # Bundle inputs and outputs together.
         samples = (sampleInputs, sampleOutputs)
 
-        print 'n_features: %d' % n_features
         # Train the classifier.
-
         # Record total training time.
-        if classifier:
-            print classifier.layers
         t_start = time.time()
-        # TODO: pick trainer method / params based on classifier type
-        classifier = trainer.TrainNeuralNetwork(
-            samples, nn=classifier, n_iter=n_iter, learning_rate=learning_rate)
+        # Pick trainer method & params based on classifier type.
+        if classifier_type == "NeuralNetwork":
+            # Train a neural network classifier.
+            trained_classifier = trainer.TrainNeuralNetwork(
+                samples, nn=classifier,
+                n_iter=n_iter, learning_rate=learning_rate)
+        elif classifier_type == "SVM":
+            # Train a SVM classifier.
+            trained_classifier = trainer.trainSVM(samples)
+        else:
+            raise Exception("Invalid classifier type: %s" % classifier_type)
         t_end = time.time()
         training_time = t_end - t_start  # seconds
         LOGGER.debug('Training %s complete.' % classifier_type)
 
         #TODO: Add test classifier option?
-        training_accuracy = classifier.score(sampleInputs, sampleOutputs)
+        training_accuracy = trained_classifier.score(sampleInputs, sampleOutputs)
 
         # Cache the trained classifier.
         classifier_id = str(uuid.uuid4().hex)
-        CACHE[classifier_id] = classifier
+        CACHE[classifier_id] = trained_classifier
 
         # Signal training completion to user. Prompt user to save classifier.
         template = JINJA_ENVIRONMENT.get_template('trainingcomplete.html')
@@ -255,19 +273,24 @@ class DataClassifier(webapp2.RequestHandler):
         db_entry = ds.FetchClassifier(conn, classifier_id)
         classifier = db_entry[3]
         # Transform given MRS data for classifier input.
+        file_name = self.request.POST['myfile'].filename
         raw_data = self.request.POST['myfile'].file.read()
         d = dataparser.get_xy_data(raw_data)
         fftd = fourierTransformer.getFFT(d)
         # Classify the transformed MRS data.
         test_input = np.array([fftd])
         classification = classifier.predict(test_input)
-        self.response.write('classification: %s' % classification)
+        # Show classification results.
+        template = JINJA_ENVIRONMENT.get_template('classificationresults.html')
+        self.response.write(template.render(
+            classification=classification, file_name=file_name))
 
 
 WEB_APP = webapp2.WSGIApplication([
     ('/', Homepage),
     ('/classify_data', DataClassifier),
     ('/data_list', MRSDataList),
+    ('/data_manager', MRSDataManager),
     ('/data_viewer', MRSDataReader),
     ('/data_upload', MRSDataUploader),
     ('/save_classifier', ClassifierUploader),

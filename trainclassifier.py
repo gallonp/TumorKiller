@@ -6,6 +6,7 @@ from sknn.mlp import Classifier, Layer
 from sklearn.externals import joblib
 from sklearn import svm
 
+
 def checkSamples(samples):
     # Make sure that there are an equal number of inputs and outputs.
     sampleInputs = samples[0]
@@ -14,8 +15,9 @@ def checkSamples(samples):
     # Make sure that at least one sample was provided.
     if len(sampleInputs) == 0:
         raise Exception('Must provide at least one file for classifier training.')
+    # Samples are okay
+    return samples
 
-    return (sampleInputs, sampleOutputs)
 
 def trainSVM(samples, C=1, kernel='rbf', probability=False):
     sampleInputs, sampleOutputs = checkSamples(samples)
@@ -23,9 +25,9 @@ def trainSVM(samples, C=1, kernel='rbf', probability=False):
     clf.fit(sampleInputs, sampleOutputs)
     return clf
 
+
 def useSVM(clf, sample):
     return clf.predict(sample)
-
 
 
 def TrainNeuralNetwork(samples, nn=None, learning_rate=0.001, n_iter=25):
@@ -57,9 +59,11 @@ def TrainNeuralNetwork(samples, nn=None, learning_rate=0.001, n_iter=25):
     nn.fit(sampleInputs, sampleOutputs)
     return nn
 
+
 def saveClassifier(classifier, name):
     joblib.dump(clf, name+'.pkl', compress=9)
     return True
+
 
 #name would be something like 'neuralnetone.pkl'
 #assumes a .pkl file
