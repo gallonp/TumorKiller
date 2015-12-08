@@ -15,9 +15,10 @@ import webapp2
 
 import datastorage as ds
 import dataparser
-import fourierTransformer
+import fourier_transformer
 import trainclassifier as trainer
 
+# pylint:disable=no-member
 
 # Directory containing jinja templates.
 JINJA_TEMPLATE_DIR = os.path.dirname(os.path.abspath(__file__)) + '/templates'
@@ -71,9 +72,9 @@ class MRSDataUploader(webapp2.RequestHandler):
         database_id = str(uuid.uuid4().hex)
 
         # Save MRS data to the database.
-        conn = ds.CreateSQLiteConnection()
+        conn = ds.create_sqlite_connection()
         LOGGER.debug('Saving MRS data to database...')
-        ds.StoreMRSData(conn, database_id, file_name, file_contents, group_label)
+        ds.store_mrs_data(conn, database_id, file_name, file_contents, group_label)
         LOGGER.debug('MRS data saved to database.')
         # Signal upload success to the user.
         template = JINJA_ENVIRONMENT.get_template('uploadcomplete.html')
@@ -89,17 +90,17 @@ class MRSDataList(webapp2.RequestHandler):
     def get(self):
         """Displays list of MRS data entries uploaded to the server."""
         # Establish database connection.
-        conn = ds.CreateSQLiteConnection()
+        conn = ds.create_sqlite_connection()
         # Query for all MRS data entries in the database.
         LOGGER.debug('Querying for all MRS data in database...')
-        db_entries = ds.FetchAllMRSData(conn)
+        db_entries = ds.fetch_all_mrs_data(conn)
         LOGGER.debug('Found %d MRS data entries in database.', len(db_entries))
 
         # Display the list of MRS data.
         self.response.out.write('<h2>Uploaded MRS Data</h2>')
         for entry in db_entries:
-            self.response.out.write('<p>[%s] %s (ID: %s)</p>' %
-                (entry[3], entry[1], entry[0]))
+            self.response.out.write('<p>[%s] %s (ID: %s)</p>' % (
+                entry[3], entry[1], entry[0]))
 
 
 class MRSDataReader(webapp2.RequestHandler):
@@ -110,9 +111,9 @@ class MRSDataReader(webapp2.RequestHandler):
         # Get database ID from request.
         db_id = self.request.GET['db_id']
         # Establish database connection.
-        conn = ds.CreateSQLiteConnection()
+        conn = ds.create_sqlite_connection()
         # Query database for MRS data with specified ID.
-        db_entry = ds.FetchMRSData(conn, db_id)
+        db_entry = ds.fetch_mrs_data(conn, db_id)
         file_contents = db_entry[2] if db_entry else None
         # Return file contents in the response.
         self.response.out.write(file_contents)
@@ -127,8 +128,9 @@ class ClassifierUploader(webapp2.RequestHandler):
         classifier_id = self.request.POST['classifier_id']
         classifier_name = self.request.POST['classifier_name']
         classifier_type = self.request.POST['classifier_type']
-        LOGGER.debug('Got save classifier request: %s, %s, %s' % (
-            classifier_id, classifier_name, classifier_type))
+        LOGGER.debug(
+            'Got save classifier request: %s, %s, %s',
+            classifier_id, classifier_name, classifier_type)
 
         # Retrieve classifier from the "cache".
         classifier = CACHE[classifier_id]
@@ -136,8 +138,8 @@ class ClassifierUploader(webapp2.RequestHandler):
             self.response.out.write('No classifier with ID %s' % classifier_id)
 
         # Save the classifier in the database.
-        conn = ds.CreateSQLiteConnection()
-        ds.StoreClassifier(
+        conn = ds.create_sqlite_connection()
+        ds.store_classifier(
             conn, classifier_id, classifier_name, classifier_type, classifier)
 
         # Signal save success to user.
@@ -151,10 +153,10 @@ class ClassifierTrainer(webapp2.RequestHandler):
     def get(self):
         """Renders a page where the user can configure classifier training."""
         # Get list of saved classifiers.
-        conn = ds.CreateSQLiteConnection()
-        classifiers = ds.FetchAllClassifiers(conn)
+        conn = ds.create_sqlite_connection()
+        classifiers = ds.fetch_all_classifiers(conn)
         # Get list of available MRS data.
-        mrs_data = ds.FetchAllMRSData(conn)
+        mrs_data = ds.fetch_all_mrs_data(conn)
 
         # Render the web page.
         template = JINJA_ENVIRONMENT.get_template('trainclassifier.html')
@@ -163,80 +165,22 @@ class ClassifierTrainer(webapp2.RequestHandler):
 
     def post(self):
         """Trains a classifier as specified by the user."""
-        # Get classifier type.
-        classifier_type = self.request.POST['classifier_type']
-        # Get classifier parameters.
-        # TODO: pass dictionary of params to a generic training method
-        learning_rate = float(self.request.POST['nn_learning_rate'])
-        n_iter = int(self.request.POST['nn_n_iter'])
-        # Get load classifer option.
-        load_classifier = self.request.POST['load_classifier'] == 'true'
-        # Get dataset identifiers.
-        training_data_ids = self.request.get_all("training_data_ids")
-
-        LOGGER.debug('TrainClassifier: type=%s, load_classifier=%s, num_samples=%d' % (
-            classifier_type, load_classifier, len(training_data_ids)))
-
         # Load a saved classifier if specified by the user.
-        classifier = None
-        classifier_name = None
-        if load_classifier:
-            # Query database for classifier with specified ID.
-            classifier_id = self.request.POST['classifier_id']
-            conn = ds.CreateSQLiteConnection()
-            db_entry = ds.FetchClassifier(conn, classifier_id)
-            classifier = db_entry[3]
-            classifier_type = db_entry[2]
-            classifier_name = db_entry[1]
+        classifier, classifier_name, classifier_type = self.load_specified_classifier() #pylint:disable=line-too-long
 
-        # Retrieve specified training data from the database.
-        conn = ds.CreateSQLiteConnection()
-        db_entries = [ds.FetchMRSData(conn, data_id) for data_id in training_data_ids]
+        # Prepare MRS data set.
+        samples = self.prepare_mrs_data_set()
 
-        # For each MRS data file, parse the data points and apply FFT.
-        # TODO: make this pre-processing step an option in the UI?
-        sampleInputs = []
-        sampleOutputs = []
-        for entry in db_entries:
-            # Parse data points from the file contents.
-            d = dataparser.get_xy_data(str(entry[2]))
-            # Apply FFT to the data points.
-            fftd = fourierTransformer.getFFT(d)
-            sampleInputs.append(fftd)
-            # Get the group label.
-            sampleOutputs.append(entry[3])
-
-        # Format the data for classifier input.
-        n_samples = len(sampleInputs)
-        n_features = len(sampleInputs[0])
-        sampleInputs = np.array(sampleInputs)  # convert before using as buffer
-        sampleInputs = np.ndarray(
-            shape=(n_samples, n_features), dtype=float, buffer=sampleInputs)
-        # Labels for training.
-        sampleOutputs = np.array(sampleOutputs)
-        # Bundle inputs and outputs together.
-        samples = (sampleInputs, sampleOutputs)
+        LOGGER.debug(
+            'TrainClassifier: type=%s, load_classifier=%s, num_samples=%d',
+            classifier_type, (classifier != None), len(samples[0]))
 
         # Train the classifier.
-        # Record total training time.
-        t_start = time.time()
-        # Pick trainer method & params based on classifier type.
-        if classifier_type == "NeuralNetwork":
-            # Train a neural network classifier.
-            trained_classifier = trainer.TrainNeuralNetwork(
-                samples, nn=classifier,
-                n_iter=n_iter, learning_rate=learning_rate)
-        elif classifier_type == "SVM":
-            # Train a SVM classifier.
-            trained_classifier = trainer.trainSVM(samples)
-        else:
-            raise Exception("Invalid classifier type: %s" % classifier_type)
-        t_end = time.time()
-        training_time = t_end - t_start  # seconds
-        LOGGER.debug('Training %s complete.' % classifier_type)
+        trained_classifier, training_time = self.train_classifier(
+            classifier_type, classifier, samples)
 
         #TODO: Add test classifier option?
-        training_accuracy = trained_classifier.score(sampleInputs, sampleOutputs)
+        training_accuracy = trained_classifier.score(samples[0], samples[1])
 
         # Cache the trained classifier.
         classifier_id = str(uuid.uuid4().hex)
@@ -251,6 +195,99 @@ class ClassifierTrainer(webapp2.RequestHandler):
             training_accuracy=training_accuracy,
             training_time=training_time))
 
+    def load_specified_classifier(self):
+        """Loads the user-specified classifier.
+
+        Returns:
+            Tuple containing (classifier, classifier_name, classifier_type).
+            If the user did not specify a classifier, then classifier and
+            classifier_name will be None.
+        """
+        classifier = None
+        classifier_name = None
+        classifier_type = self.request.POST['classifier_type']
+        # Load a saved classifier if specified by the user.
+        if self.request.POST['load_classifier'] == 'true':
+            # Query database for classifier with specified ID.
+            classifier_id = self.request.POST['classifier_id']
+            db_entry = ds.fetch_classifier(
+                ds.create_sqlite_connection(), classifier_id)
+            classifier = db_entry[3]
+            classifier_type = db_entry[2]
+            classifier_name = db_entry[1]
+        return (classifier, classifier_name, classifier_type)
+
+    def prepare_mrs_data_set(self):
+        """Retrieves all specified MRS data entries and processes each entry.
+
+        Each MRS file is parsed and FFT is applied if specified.
+
+        Returns:
+            Tuple containing (list of sample inputs, list of sample outputs).
+        """
+        training_data_ids = self.request.get_all("training_data_ids")
+        apply_fft = 'apply_fft' in self.request.POST
+        LOGGER.debug('Processing MRS data: apply_fft=%s', apply_fft)
+        # Retrieve specified training data from the database.
+        conn = ds.create_sqlite_connection()
+        db_entries = [ds.fetch_mrs_data(conn, data_id) for data_id in training_data_ids]
+        # Separate each database entry into input and output.
+        sample_inputs = []
+        sample_outputs = []
+        for entry in db_entries:
+            # Parse data points from the file contents.
+            mrs_data = dataparser.get_xy_data(str(entry[2]))
+            # Apply FFT to the data points if specified by user.
+            if apply_fft:
+                mrs_data = fourier_transformer.get_fft(mrs_data)
+            # Add input, output pair to separate lists.
+            sample_inputs.append(mrs_data)
+            sample_outputs.append(entry[3])
+
+        # Format the data for classifier input.
+        n_samples = len(sample_inputs)
+        n_features = len(sample_inputs[0])
+        sample_inputs = np.array(sample_inputs)  # convert before using as buffer
+        sample_inputs = np.ndarray(
+            shape=(n_samples, n_features), dtype=float, buffer=sample_inputs)
+        # Labels for training.
+        sample_outputs = np.array(sample_outputs)
+
+        # Return processed MRS data.
+        return (sample_inputs, sample_outputs)
+
+    def train_classifier(self, classifier_type, classifier, samples):
+        """Trains specified classifier with given arguments and data.
+
+        Args:
+            classifier_type: The type of classifier to train.
+            classifier: (optional) Classifier model to train.
+            samples: Tuple of (sample inputs, sample outputs).
+
+        Returns:
+            Tuples containing (trained classifier, training time in seconds).
+        """
+        # Train the classifier.
+        # Record total training time.
+        t_start = time.time()
+        # Pick trainer method & params based on classifier type.
+        if classifier_type == "NeuralNetwork":
+            # Train a neural network classifier.
+            trained_classifier = trainer.train_neural_network(
+                samples, nn=classifier,
+                learning_rate=float(self.request.POST['learning_rate']),
+                n_iter=int(self.request.POST['n_iter']))
+        elif classifier_type == "SVM":
+            # Train a SVM classifier.
+            trained_classifier = trainer.train_svm(samples)
+        else:
+            raise Exception("Invalid classifier type: %s" % classifier_type)
+
+        t_end = time.time()
+        LOGGER.debug('Training %s complete.', classifier_type)
+        training_time = t_end - t_start  # seconds
+        return (trained_classifier, training_time)
+
 
 class DataClassifier(webapp2.RequestHandler):
     """Handler for classifying MRS data."""
@@ -258,8 +295,8 @@ class DataClassifier(webapp2.RequestHandler):
     def get(self):
         """Renders a page where the user can classify MRS data."""
         # Get list of saved classifiers.
-        conn = ds.CreateSQLiteConnection()
-        classifiers = ds.FetchAllClassifiers(conn)
+        conn = ds.create_sqlite_connection()
+        classifiers = ds.fetch_all_classifiers(conn)
 
         # Render the web page.
         template = JINJA_ENVIRONMENT.get_template('classifydata.html')
@@ -269,14 +306,14 @@ class DataClassifier(webapp2.RequestHandler):
         """Classifies given data using specified classifier."""
         # Retrieve specified classifier from database.
         classifier_id = self.request.POST['classifier_id']
-        conn = ds.CreateSQLiteConnection()
-        db_entry = ds.FetchClassifier(conn, classifier_id)
+        conn = ds.create_sqlite_connection()
+        db_entry = ds.fetch_classifier(conn, classifier_id)
         classifier = db_entry[3]
         # Transform given MRS data for classifier input.
         file_name = self.request.POST['myfile'].filename
         raw_data = self.request.POST['myfile'].file.read()
         d = dataparser.get_xy_data(raw_data)
-        fftd = fourierTransformer.getFFT(d)
+        fftd = fourier_transformer.get_fft(d)
         # Classify the transformed MRS data.
         test_input = np.array([fftd])
         classification = classifier.predict(test_input)
