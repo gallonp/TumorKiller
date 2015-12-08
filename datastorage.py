@@ -16,10 +16,11 @@ TABLE_COLS_BRAINSCANS = '(Id TEXT, FileName TEXT, FileContents BLOB, GroupLabel 
 # Name of table containing classifiers.
 TABLE_NAME_CLASSIFIERS = 'Classifiers'
 # Column description for table containing classifiers.
+# pylint:disable=line-too-long
 TABLE_COLS_CLASSIFIERS = '(Id TEXT, ClassifierName TEXT, ClassifierType TEXT, SerializedClassifier TEXT)'
 
 
-def CreateSQLiteConnection(db_filename=SQLITE_DATABASE_FILE):
+def create_sqlite_connection(db_filename=SQLITE_DATABASE_FILE):
     """Creates a connection to the SQLite database in the specified file.
 
     Args:
@@ -31,13 +32,13 @@ def CreateSQLiteConnection(db_filename=SQLITE_DATABASE_FILE):
     return sqlite3.connect(db_filename)
 
 
-def _TableExists(conn, table_name):
+def _table_exists(conn, table_name):
     """Determines whether or not the given table exists in the database.
-    
+
     Args:
         conn: A database Connection object.
         table_name: Name of table.
-    
+
     Returns:
         True if a table the with given name is found in the database, otherwise
         returns false.
@@ -50,9 +51,9 @@ def _TableExists(conn, table_name):
         return len(cur.fetchall()) == 1
 
 
-def _CreateTableIfNotExists(conn, table_name, columns):
+def _create_table(conn, table_name, columns):
     """Creates a new table in the given database.
-    
+
     Args:
         conn: A database Connection object.
         table_name: Name of the table to create.
@@ -64,9 +65,9 @@ def _CreateTableIfNotExists(conn, table_name, columns):
         cur.execute('CREATE TABLE IF NOT EXISTS %s%s' % (table_name, columns))
 
 
-def _FetchEntryFromTable(conn, table_name, entry_id):
+def _fetch_entry_from_table(conn, table_name, entry_id):
     """Fetches entry with specified ID from table.
-    
+
     Args:
         conn: A database Connection object.
         table_name: Name of the table to query.
@@ -76,7 +77,7 @@ def _FetchEntryFromTable(conn, table_name, entry_id):
         The entry with specified ID if found. Otherwise returns None.
     """
     # Make sure the table exists.
-    if not _TableExists(conn, table_name):
+    if not _table_exists(conn, table_name):
         return None
     # Query for the classifier.
     with conn:
@@ -88,18 +89,18 @@ def _FetchEntryFromTable(conn, table_name, entry_id):
         return query_result if query_result else None
 
 
-def _FetchAllFromTable(conn, table_name):
+def _fetch_all_from_table(conn, table_name):
     """Fetches all rows from the specified table.
-    
+
     Args:
         conn: A database Connection object.
         table_name: Name of the table to query.
-    
+
     Returns:
         A list of all entries in the specified table.
     """
     # Make sure the table exists.
-    if not _TableExists(conn, table_name):
+    if not _table_exists(conn, table_name):
         return []
     # Query for all entries in the table.
     with conn:
@@ -108,7 +109,24 @@ def _FetchAllFromTable(conn, table_name):
         return cur.fetchall()
 
 
-def StoreMRSData(conn, file_id, file_name, file_contents, group_label):
+def _store_entry_in_table(conn, table_name, entry):
+    """Stores given data in a new row of the specified database table.
+
+    Args:
+        conn: A database Connection object.
+        table_name: Name of table where entry should be stored.
+        entry: Tuple of values to insert into table.
+    """
+    # Create entry insertion template.
+    template = ('?, ' * len(entry)).rstrip(', ')  # "?" for each value
+    template = '(%s)' % template  # enclose in parentheses
+    # Try to insert a new row into the table.
+    with conn:
+        cur = conn.cursor()
+        cur.execute('INSERT INTO %s VALUES%s' % (table_name, template), entry)
+
+
+def store_mrs_data(conn, file_id, file_name, file_contents, group_label):
     """Stores given MRS data in the database.
 
     Args:
@@ -119,16 +137,13 @@ def StoreMRSData(conn, file_id, file_name, file_contents, group_label):
         group_label: Name of the therapy group that the given patient data belongs to.
     """
     # Create the table if it does not exist.
-    _CreateTableIfNotExists(conn, TABLE_NAME_BRAINSCANS, TABLE_COLS_BRAINSCANS)
+    _create_table(conn, TABLE_NAME_BRAINSCANS, TABLE_COLS_BRAINSCANS)
     # Try to insert a new row into the table.
-    with conn:
-        cur = conn.cursor()
-        cur.execute(
-            'INSERT INTO %s VALUES(?, ?, ?, ?)' % TABLE_NAME_BRAINSCANS,
-            (file_id, file_name, file_contents, group_label))
+    table_entry = (file_id, file_name, file_contents, group_label)
+    _store_entry_in_table(conn, TABLE_NAME_BRAINSCANS, table_entry)
 
 
-def FetchMRSData(conn, file_id):
+def fetch_mrs_data(conn, file_id):
     """Fetches the specified MRS data from the database.
 
     Args:
@@ -141,10 +156,10 @@ def FetchMRSData(conn, file_id):
         Otherwise, the method returns None.
     """
     # Fetch specified MRS data from the database.
-    return _FetchEntryFromTable(conn, TABLE_NAME_BRAINSCANS, file_id)
+    return _fetch_entry_from_table(conn, TABLE_NAME_BRAINSCANS, file_id)
 
 
-def FetchAllMRSData(conn):
+def fetch_all_mrs_data(conn):
     """Fetches all MRS data from the database.
 
     Args:
@@ -155,10 +170,10 @@ def FetchAllMRSData(conn):
         a 4-tuple of the form (ID, filename, MRS file contents, group label).
     """
     # Fetch all MRS data from the database.
-    return _FetchAllFromTable(conn, TABLE_NAME_BRAINSCANS)
+    return _fetch_all_from_table(conn, TABLE_NAME_BRAINSCANS)
 
 
-def StoreClassifier(conn, classifier_id, classifier_name, classifier_type, classifier):
+def store_classifier(conn, classifier_id, classifier_name, classifier_type, classifier):
     """Stores the given classifier in the database.
 
     Args:
@@ -171,16 +186,13 @@ def StoreClassifier(conn, classifier_id, classifier_name, classifier_type, class
     # Serialize the classifier.
     classifier = cPickle.dumps(classifier)
     # Create the table if it does not exist.
-    _CreateTableIfNotExists(conn, TABLE_NAME_CLASSIFIERS, TABLE_COLS_CLASSIFIERS)
-    # Try to insert a new row into the table.
-    with conn:
-        cur = conn.cursor()
-        cur.execute(
-            'INSERT INTO %s VALUES(?, ?, ?, ?)' % TABLE_NAME_CLASSIFIERS,
-            (classifier_id, classifier_name, classifier_type, classifier))
+    _create_table(conn, TABLE_NAME_CLASSIFIERS, TABLE_COLS_CLASSIFIERS)
+    # Store classifier in the database.
+    table_entry = (classifier_id, classifier_name, classifier_type, classifier)
+    _store_entry_in_table(conn, TABLE_NAME_CLASSIFIERS, table_entry)
 
 
-def FetchClassifier(conn, classifier_id):
+def fetch_classifier(conn, classifier_id):
     """Queries the database for a classifier with specified ID.
 
     Args:
@@ -193,14 +205,14 @@ def FetchClassifier(conn, classifier_id):
         specified ID is not found in the database.
     """
     # Fetch specified classifier from the database.
-    db_entry = _FetchEntryFromTable(conn, TABLE_NAME_CLASSIFIERS, classifier_id)
+    db_entry = _fetch_entry_from_table(conn, TABLE_NAME_CLASSIFIERS, classifier_id)
     if db_entry is None:
         return None
     # Convert serialized classifier to object.
     return (db_entry[0], db_entry[1], db_entry[2], cPickle.loads(str(db_entry[3])))
 
 
-def FetchAllClassifiers(conn):
+def fetch_all_classifiers(conn):
     """Fetches all classifiers from the database.
 
     Args:
@@ -212,7 +224,7 @@ def FetchAllClassifiers(conn):
         classifier).
     """
     # Fetch all classifiers from the database.
-    db_entries = _FetchAllFromTable(conn, TABLE_NAME_CLASSIFIERS)
+    db_entries = _fetch_all_from_table(conn, TABLE_NAME_CLASSIFIERS)
     # Convert serialized classifiers to objects.
     converted_entries = []
     for entry in db_entries:
