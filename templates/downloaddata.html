@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MRS Data</title>
+<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="navbar">
+        <a href="/"><img class="navbar-icon" src="brain.png" /></a>
+        <a href="data_manager"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">MRS Data</div></div></a>
+        <a href="train_classifier"><div class="navbar-item"><div class="navbar-item-text">Train Classifier</div></div></a>
+        <a href="classify_data"><div class="navbar-item"><div class="navbar-item-text">Classify Data</div></div></a>
+    </div>
+
+    <div class="page-content">
+        <h1 class="page-title">Download MRS Data</h1>
+
+        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+            <!-- Show list of uploaded data -->
+            <div class="section-container">
+            	<h3 class="section-title">Select MRS Data to Download</h3>
+                <div class="section-body">
+                    {% if mrs_data|length > 0 %}
+                        <select id="selectdata" name="mrs_data_id" multiple="false" size="5" class="select-list">
+                            {% for entry in mrs_data %}
+                                <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    {% else %}
+                        <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No MRS data was found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <input type="submit" value="Download" class="form-button blue-button">
+        </form>
+    </div>
+
+</body>
+</html>

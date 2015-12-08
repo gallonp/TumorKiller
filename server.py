@@ -84,39 +84,35 @@ class MRSDataUploader(webapp2.RequestHandler):
             database_id=database_id))
 
 
-class MRSDataList(webapp2.RequestHandler):
-    """Handler for listing uploaded MRS data."""
+class MRSDataDownloader(webapp2.RequestHandler):
+    """Handler for MRS data downloads."""
 
     def get(self):
-        """Displays list of MRS data entries uploaded to the server."""
-        # Establish database connection.
-        conn = ds.create_sqlite_connection()
+        """Shows all MRS data on download page."""
         # Query for all MRS data entries in the database.
+        conn = ds.create_sqlite_connection()
         LOGGER.debug('Querying for all MRS data in database...')
         db_entries = ds.fetch_all_mrs_data(conn)
         LOGGER.debug('Found %d MRS data entries in database.', len(db_entries))
 
-        # Display the list of MRS data.
-        self.response.out.write('<h2>Uploaded MRS Data</h2>')
-        for entry in db_entries:
-            self.response.out.write('<p>[%s] %s (ID: %s)</p>' % (
-                entry[3], entry[1], entry[0]))
+        # Render download page.
+        template = JINJA_ENVIRONMENT.get_template('downloaddata.html')
+        self.response.write(template.render(mrs_data=db_entries))
 
+    def post(self):
+        """Serves requested file to the client."""
+        # Retrieve specified MRS data from the database.
+        mrs_data_id = self.request.get('mrs_data_id')
+        db_entry = ds.fetch_mrs_data(ds.create_sqlite_connection(), mrs_data_id)
 
-class MRSDataReader(webapp2.RequestHandler):
-    """Handler for reading uploaded MRS data files."""
-
-    def get(self):
-        """Reads the specified MRS data file from the database."""
-        # Get database ID from request.
-        db_id = self.request.GET['db_id']
-        # Establish database connection.
-        conn = ds.create_sqlite_connection()
-        # Query database for MRS data with specified ID.
-        db_entry = ds.fetch_mrs_data(conn, db_id)
-        file_contents = db_entry[2] if db_entry else None
-        # Return file contents in the response.
-        self.response.out.write(file_contents)
+        # Set response headers.
+        self.response.headers['Content-Type'] = 'application/octet-stream'
+        self.response.headers['Content-Description'] = 'File Transfer'
+        self.response.headers['Content-Transfer-Encoding'] = 'binary'
+        self.response.headers['Content-Disposition'] = 'attachment; filename=\"%s\"' % db_entry[1]
+        self.response.headers['Content-Length'] = sys.getsizeof(db_entry[2])
+        # Set response content.
+        self.response.out.write(db_entry[2])
 
 
 class ClassifierUploader(webapp2.RequestHandler):
@@ -326,9 +322,8 @@ class DataClassifier(webapp2.RequestHandler):
 WEB_APP = webapp2.WSGIApplication([
     ('/', Homepage),
     ('/classify_data', DataClassifier),
-    ('/data_list', MRSDataList),
+    ('/data_download', MRSDataDownloader),
     ('/data_manager', MRSDataManager),
-    ('/data_viewer', MRSDataReader),
     ('/data_upload', MRSDataUploader),
     ('/save_classifier', ClassifierUploader),
     ('/train_classifier', ClassifierTrainer),
