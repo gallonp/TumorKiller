@@ -341,6 +341,7 @@ def main(argv):
     # Command-line args.
     parser = argparse.ArgumentParser()
     parser.add_argument('-loglevel', action="store", type=str, default='INFO')
+    parser.add_argument('-port', action="store", type=str, default='8080')
     args = parser.parse_args(argv)
 
     # Set logging level.
@@ -358,7 +359,7 @@ def main(argv):
     LOGGER.addHandler(handler)
 
     # Start ther server.
-    httpserver.serve(APP, host='127.0.0.1', port='8080')
+    httpserver.serve(APP, host='127.0.0.1', port=args.port)
 
 
 if __name__ == '__main__':
