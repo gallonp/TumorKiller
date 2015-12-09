@@ -2,8 +2,49 @@
 <html>
 <head>
 <title>Train Classifier</title>
+<script type="text/javascript" src="showsteps.js"></script>
 <script type="text/javascript">
-function updateClassifierSelection(clickedButton) {
+function validateForm() {
+    // Update which steps in the form are visible.
+    var form = document.getElementById("uploadform");
+    var sections = form.getElementsByClassName("section-container");
+    var buttons = form.getElementsByClassName("form-button");
+
+    // Sequentially validate steps.
+    var stepsToShow = 1;
+    // Step 1: classifier needs to be selected.
+    if (classifierIsSelected()) {
+        console.log("Classifier selected.");
+        // Step 2 has default values, so show step 3.
+        stepsToShow += 2;
+        // Step 3: training data needs to be selected.
+        var trainingDataMenu = document.getElementById("selectdata");
+        if (trainingDataMenu != null && trainingDataMenu.selectedIndex > -1) {
+            stepsToShow += 1;
+        }
+    }
+
+    // Update the UI.
+    showSteps(stepsToShow, sections, buttons);
+}
+
+function classifierIsSelected() {
+    var classifierOptions = document.getElementsByClassName("classifier-option");
+    if (classifierOptions[0].getElementsByTagName("input")[0].checked) {
+        // Load classifier option. A classifier should be selected.
+        var loadClassifierMenu = document.getElementById("loadclassifiermenu");
+        if (loadClassifierMenu == null) {
+            return false;
+        }
+        return (loadClassifierMenu.selectedIndex >= 0);
+    } else {
+        // New classifier option. A classifier type should be selected.
+        var newclassifiermenu = document.getElementById("newclassifiermenu");
+        return (newclassifiermenu.selectedIndex > 0);
+    }
+}
+
+function showSelectedClassifierType(clickedButton) {
     // Determine which option was selected.
     var classifierOptions = document.getElementsByClassName("classifier-option");
     if (classifierOptions[0].contains(clickedButton)) {
@@ -30,21 +71,20 @@ function updateClassifierSelection(clickedButton) {
     classifierOptions[selectedOption].style.opacity = 1;
 }
 
-function _updateClassifierParams_loaded(savedClassifierMenu) {
+function updateTrainingParameters_savedClassifier(savedClassifierMenu) {
     // Make sure a saved classifier is selected.
     if (savedClassifierMenu.selectedIndex < 0) {
         return;
     }
     // Determine selected classifier type.
-    var selectedOption = savedClassifierMenu.options[savedClassifierMenu.selectedIndex]
-    var beginBracket = selectedOption.text.indexOf("[")
-    var endBracket = selectedOption.text.indexOf("]")
+    var selectedOption = savedClassifierMenu.options[savedClassifierMenu.selectedIndex];
     // Show parameters for selected classifier type.
-    var classifierType = selectedOption.text.substring(beginBracket + 1, endBracket)
-    updateClassifierParams(classifierType)
+    var classifierType = selectedOption.parentElement.label;
+    console.log("classifierType: " + classifierType)
+    _updateClassifierParams(classifierType)
 }
 
-function _updateClassifierParams_new(newClassifierMenu) {
+function updateTrainingParameters_newClassifier(newClassifierMenu) {
     // Make sure a classifier type is selected.
     if (newClassifierMenu.selectedIndex == 0) {
         return;
@@ -52,10 +92,10 @@ function _updateClassifierParams_new(newClassifierMenu) {
     // Show paramters for selected classifier type.
     var classifierType = newClassifierMenu.options[newClassifierMenu.selectedIndex].value;
     console.log("selected " + classifierType)
-    updateClassifierParams(classifierType);
+    _updateClassifierParams(classifierType);
 }
 
-function updateClassifierParams(classifierType) {
+function _updateClassifierParams(classifierType) {
     // Hide all classifier parameters.
     var classifierParameters = document.getElementsByClassName("classifier-params");
     for (i = 0; i < classifierParameters.length; ++i) {
@@ -68,7 +108,7 @@ function updateClassifierParams(classifierType) {
 </script>
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
-<body>
+<body onload="validateForm()">
     <div class="navbar">
         <a href="/"><img class="navbar-icon" src="brain.png" /></a>
         <a href="data_manager"><div class="navbar-item"><div class="navbar-item-text">MRS Data</div></div></a>
@@ -79,20 +119,24 @@ function updateClassifierParams(classifierType) {
     <div class="page-content">
         <h1 class="page-title">Train Classifier</h1>
 
-        <form enctype="multipart/form-data" method="post" action="#">
+        <form id="uploadform" enctype="multipart/form-data" method="post" action="#" onchange="validateForm()">
             <!-- Classifier -->
             <div class="section-container" id="choose-classifier">
                 <h3 class="section-title">1. Classifier</h3>
                 <div class="section-body">
                     <p class="section-description">Choose a classifier type.</p>
                     <!-- Load classifier -->
-                    <div class="classifier-option" id="classifier-option-load" onclick="updateClassifierSelection(this)" style="opacity:1;">
-                        <input type="radio" class="classifier-option-button" name="load_classifier" value="true" checked="true">Load Classifier
+                    <div class="classifier-option" id="classifier-option-load" onclick="showSelectedClassifierType(this);validateForm();" style="opacity:1;">
+                        <input type="radio" class="classifier-option-button" name="load_classifier" value="true" checked="true" onclick="validateForm()">Load Classifier
                         <br>
                         {% if classifiers|length > 0 %}
-                            <select id="loadclassifiermenu" name="classifier_id" multiple="false" size="5" class="select-list" onchange="_updateClassifierParams_loaded(this)">
-                                {% for entry in classifiers %}
-                                    <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
+                            <select id="loadclassifiermenu" name="classifier_id" multiple="false" size="8" class="select-list" onchange="updateTrainingParameters_savedClassifier(this)" style="margin:10px;">
+                                {% for group in classifiers|groupby(2) %}
+                                    <optgroup label="{{ group.grouper }}">
+                                    {% for entry in group.list %}
+                                        <option value="{{ entry[0] }}">{{ entry[1] }}</option>
+                                    {% endfor %}
+                                    </optgroup>
                                 {% endfor %}
                             </select>
                         {% else %}
@@ -100,9 +144,9 @@ function updateClassifierParams(classifierType) {
                         {% endif %}
                     </div>
                     <!-- New classifier -->
-                    <div class="classifier-option" id="classifier-option-new" onclick="updateClassifierSelection(this)">
+                    <div class="classifier-option" id="classifier-option-new" onclick="showSelectedClassifierType(this);validateForm();">
                         <input type="radio" class="classifier-option-button" name="load_classifier" value="false">New Classifier
-                    	<select id="newclassifiermenu" name="classifier_type" onchange="_updateClassifierParams_new(this)">
+                        <select id="newclassifiermenu" name="classifier_type" onchange="updateTrainingParameters_newClassifier(this)">
                             <option value="--">--</option>
                             <option value="NeuralNetwork">Neural Network</option>
                             <option value="SVM">State Vector Machine</option>
@@ -139,15 +183,20 @@ function updateClassifierParams(classifierType) {
                 <div class="section-body">
                     <p class="section-description">Select the MRS data that should be used for training.</p>
                     {% if mrs_data|length > 0 %}
-                        <select id="selectdata" name="training_data_ids" multiple="true" size="5" class="select-list">
-                            {% for entry in mrs_data %}
-                                <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
+                        <select id="selectdata" name="training_data_ids" multiple="true" size="8" class="select-list" style="margin-left:5px;">
+                            {% for group in mrs_data|groupby(3) %}
+                                <optgroup label="{{ group.grouper }}">
+                                {% for entry in group.list %}
+                                    <option value="{{ entry[0] }}">{{ entry[1] }}</option>
+                                {% endfor %}
+                                </optgroup>
                             {% endfor %}
                         </select>
                         <p><input type="checkbox" name="apply_fft" checked>Apply Fast Fourier Transform</p>
                     {% else %}
                         <p class="section-description" style="margin-left:18px;color:#777;font-size:12px;">No MRS data was found.</p>
                     {% endif %}
+                    
                 </div>
             </div>
 

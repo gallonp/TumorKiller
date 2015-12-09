@@ -3,8 +3,30 @@
 <head>
 <title>MRS Data</title>
 <link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="showsteps.js"></script>
+<script type="text/javascript">
+function validateForm() {
+    // Update which steps in the form are visible.
+    var form = document.getElementById("uploadform");
+    var sections = form.getElementsByClassName("section-container");
+    var buttons = form.getElementsByClassName("form-button");
+
+    // Sequentially validate steps.
+    var stepsToShow = 1;
+    // Step 1: file needs to be selected.
+    console.log(sections)
+    var filemenu = document.getElementById("selectdata");
+    if (filemenu != null && filemenu.selectedIndex > -1) {
+        console.log("File selected.");
+        stepsToShow += 1;
+    }
+
+    // Update the UI.
+    showSteps(stepsToShow, sections, buttons);
+}
+</script>
 </head>
-<body>
+<body onload="validateForm()">
     <div class="navbar">
         <a href="/"><img class="navbar-icon" src="brain.png" /></a>
         <a href="data_manager"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">MRS Data</div></div></a>
@@ -15,15 +37,19 @@
     <div class="page-content">
         <h1 class="page-title">Download MRS Data</h1>
 
-        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+        <form id="uploadform" enctype="multipart/form-data" method="post" action="#" onchange="validateForm()">
             <!-- Show list of uploaded data -->
             <div class="section-container">
             	<h3 class="section-title">Select MRS Data to Download</h3>
                 <div class="section-body">
                     {% if mrs_data|length > 0 %}
-                        <select id="selectdata" name="mrs_data_id" multiple="false" size="5" class="select-list">
-                            {% for entry in mrs_data %}
-                                <option value="{{ entry[0] }}">[{{ entry[3] }}] {{ entry[1] }}</option>
+                        <select id="selectdata" name="mrs_data_id" multiple="false" size="12" class="select-list">
+                            {% for group in mrs_data|groupby(3) %}
+                                <optgroup label="{{ group.grouper }}">
+                                {% for entry in group.list %}
+                                    <option value="{{ entry[0] }}">{{ entry[1] }}</option>
+                                {% endfor %}
+                                </optgroup>
                             {% endfor %}
                         </select>
                     {% else %}

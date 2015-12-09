@@ -3,8 +3,42 @@
 <head>
 <title>Classify Data</title>
 <link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="showsteps.js"></script>
+<script type="text/javascript">
+function validateForm() {
+    // Update which steps in the form are visible.
+    var form = document.getElementById("uploadform");
+    var sections = form.getElementsByClassName("section-container");
+    var buttons = form.getElementsByClassName("form-button");
+
+    // Sequentially validate steps.
+    var stepsToShow = 1;
+    // Step 1: classifier needs to be selected.
+    if (classifierIsSelected()) {
+        console.log("Classifier selected.");
+        stepsToShow += 1;
+        // Step 2: test data needs to be selected.
+        var testDataInput = document.getElementById("fileupload");
+        if (testDataInput.value != "") {
+            console.log("Test data selected.");
+            stepsToShow += 1;
+        }
+    }
+
+    // Update the UI.
+    showSteps(stepsToShow, sections, buttons);
+}
+
+function classifierIsSelected() {
+    var classifierMenu = document.getElementById("selectclassifier");
+    if (classifierMenu == null) {
+        return false;
+    }
+    return (classifierMenu.selectedIndex > -1)
+}
+</script>
 </head>
-<body>
+<body onload="validateForm()">
     <div class="navbar">
         <a href="/"><img class="navbar-icon" src="brain.png" /></a>
         <a href="data_manager"><div class="navbar-item"><div class="navbar-item-text">MRS Data</div></div></a>
@@ -15,15 +49,19 @@
     <div class="page-content">
         <h1 class="page-title">MRS Data Classification</h1>
 
-        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+        <form id="uploadform" enctype="multipart/form-data" method="post" action="#" onchange="validateForm()">
             <div class="section-container">
                 <h3 class="section-title">1. Choose Classifier</h3>
                 <div class="section-body">
                     <p class="section-description" style="margin-bottom:0px">Which classifier would you like to use?</p>
                     {% if classifiers|length > 0 %}
-                        <select id="selectclassifier" name="classifier_id" multiple="false" size="5" class="select-list">
-                            {% for entry in classifiers %}
-                                <option value="{{ entry[0] }}">[{{ entry[2] }}] {{ entry[1] }}</option>
+                        <select id="selectclassifier" name="classifier_id" multiple="false" size="10" class="select-list">
+                            {% for group in classifiers|groupby(2) %}
+                                <optgroup label="{{ group.grouper }}">
+                                {% for entry in group.list %}
+                                    <option value="{{ entry[0] }}">{{ entry[1] }}</option>
+                                {% endfor %}
+                                </optgroup>
                             {% endfor %}
                         </select>
                     {% else %}

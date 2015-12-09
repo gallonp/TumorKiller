@@ -76,14 +76,32 @@ body {
     margin:15px 15px 0px 20px;
     border:1px solid #CCC;
 }
-.select-list{
+.select-list {
     margin:0px;
-    padding:3px 5px;
-    width:200px;
+    padding:0px;
+    width:250px;
+}
+.select-list:focus { 
+    outline: none;
 }
 .select-list select {
     padding:30px;
     height:30px;
+}
+.select-list optgroup {
+    background-color:#EEE;
+    color:#555;
+    font-size:12px;
+    font-weight:500;
+    padding:5px 0px 0px 0px;
+}
+.select-list option {
+    background-color:#FFF;
+    font-size:11px;
+    padding:5px 3px;
+}
+.select-list option:first-child {
+    margin-top:5px;
 }
 .text-input {
     height:20px;
@@ -108,12 +126,18 @@ body {
 .blue-button {
   background: #4285f4;
 }
+.blue-button:disabled {
+  background: #0e63f1; 
+}
 .blue-button:hover {
   background: #0e63f1; 
 }
 .grey-button {
   background: #5E5E5E;
 }
-.grey-button:hover {
-  background: #4A4A4A; 
+.grey-button:disabled {
+  background: #0e63f1; 
+}
+.blue-button:hover {
+  background: #0e63f1; 
 }

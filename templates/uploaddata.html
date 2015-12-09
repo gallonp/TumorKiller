@@ -3,8 +3,29 @@
 <head>
 <title>Upload Data</title>
 <link rel="stylesheet" type="text/css" href="style.css">
+<script type="text/javascript" src="showsteps.js"></script>
+<script type="text/javascript">
+function updateSteps() {
+    // Update which steps in the form are visible.
+    var form = document.getElementById("uploadform");
+    var sections = form.getElementsByClassName("section-container");
+    var buttons = form.getElementsByClassName("form-button")
+
+    // Sequentially validate steps.
+    var stepsToShow = 1;
+    // Step 1 needs file to be selected.
+    if (sections[0].getElementsByTagName("input")[0].value != "") {
+        // Step 2 has a default value, so next step can be shown.
+        console.log("File selected.");
+        stepsToShow += 2;
+    }
+
+    // Update the UI.
+    showSteps(stepsToShow, sections, buttons);
+}
+</script>
 </head>
-<body>
+<body onload="updateSteps()">
     <div class="navbar">
         <a href="/"><img class="navbar-icon" src="brain.png" /></a>
         <a href="data_manager"><div class="navbar-item navbar-item-selected"><div class="navbar-item-text">MRS Data</div></div></a>
@@ -15,11 +36,11 @@
     <div class="page-content">
         <h1 class="page-title">Upload MRS Data</h1>
 
-        <form id="uploadbanner" enctype="multipart/form-data" method="post" action="#">
+        <form id="uploadform" enctype="multipart/form-data" method="post" action="#" onchange="updateSteps()">
             <div class="section-container">
                 <h3 class="section-title">1. Choose MRS Data File</h3>
                 <div class="section-body">
-                    <input id="fileupload" name="myfile" type="file" style=""/>
+                    <input type="file" id="fileupload" name="myfile" />
                 </div>
             </div>
 
